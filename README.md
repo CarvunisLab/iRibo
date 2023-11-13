@@ -18,8 +18,7 @@ A comprehensive tool for integrating ribosome profiling data to detect genome wi
 ## Installation and Prerequisites:
 
 - iRibo Download: 
-  Obtain iRibo from https://github.com/Alistair-Turcan/iRibo. 
-  Instructions post download:
+  Obtain iRibo from https://github.com/CarvunisLab/iRibo. 
   1. Download the zip file.
   2. cd into the directory.
   3. Run make.
@@ -30,23 +29,22 @@ A comprehensive tool for integrating ribosome profiling data to detect genome wi
   - Storage: At least 100GB
 
 - Dependencies: 
-  R version 4.2.2 is necessary. Download and documentation are available at https://www.r-project.org/.
-
+  R version 4.2.2+. Download and documentation are available at https://www.r-project.org/.
   Samtools. Download and documentation are available at https://www.htslib.org/. 
 
 ------------------------------------------------------------------------------
 
 ## Data Collection and Preprocessing:
 
-iRibo takes in:
+iRibo inputs:
 1. Genome in FASTA format.
-2. Annotations in GFF3 or GTF format.
-3. Transcriptome (optional): Accepts both annotated and unannotated transcripts in GFF3 or GTF format.
-4. Aligned ribo-seq reads in SAM or BAM format.
+2. Genome annotations in GFF3 or GTF format.
+3. Transcriptome (optional) in GFF3 or GTF format.
+4. Aligned ribo-seq reads in SAM or BAM format produced by a program like STAR (https://github.com/alexdobin/STAR)
 
 Recommendation: 
-- Trim low-quality reads and adapters from ribo-seq samples in FASTQ format for best alignment.
-- Choose a transcriptome that is as comprehensive as possible, for both read mapping and iRibo.
+- For best alignment, trim low-quality reads and adapters using a program like cutadapt or trim-galore. 
+- To find noncanonical translated ORFs, it is ideal to use a comprehensive transcriptome; i.e. a transcriptome that includes transcripts that may not be annnotated genes. 
 
 Note:
 - Ensure genome, annotations, and transcriptome have consistent chromosome identifiers, e.g., >chr1 in genome should match chr1 in annotations.
