@@ -127,7 +127,7 @@ Description of null_distribution output file:
 
 Description of all_passed_reads_f and all_passed_reads_r files:
 - chr: Index of the contig or chromosome the read maps to. 
-- strand: The strand the read aligns to, 0 for forward, 1 for reverse.
+- strand: The strand the read aligns to, 0 for plis, 1 for minus.
 - pos: The genomic position of the start of the read.
 - count: How many reads map to this contig, strand, and position.
 
@@ -135,11 +135,11 @@ Description of all_passed_reads_f and all_passed_reads_r files:
 
 ## GenerateTranslatome:
 
-This final step creates the translatome, yielding:
-- translated_orfs.csv: Data on translated ORFs. The same output format as candidate_orfs, but with 3 new columns for in-frame read count, expression level (length/in-frame read count), and p-value of discovery.
-- nORF_discovery.png: Graph for p-values of real vs. scrambled nORFs and FDR cutoff.
-- cORF_discovery.png: Graph for p-values of real vs. scrambled cORFs and FDR cutoff.
-- translated_orfs.gff3: Annotations of all translated ORFs, ready to be put into a genome browser like IGV.
+This step produces a list of translated ORFs. Running this step creates three output files:
+- translated_orfs.csv: Data on all inferred translated ORFs. The same output format as candidate_orfs, but with 3 new columns described below. 
+- nORF_discovery.png: A figure showing the number of actual vs. scrambled noncanonical (unannotated) ORFs detected at a range of p-value thresholds, indicating the specified FDR cutoff. 
+- cORF_discovery.png: A figure showing the number of actual vs. scrambled canonical ORFs detected at a range of p-value thresholds.
+- translated_orfs.gff3: An annotation file giving the bounds of exons of all translated ORFs, which can be visualized in a genome browser like IGV.
 
 To run:
 Rscript GenerateTranslatome.R --TranslationCalls=path/to/translation_calls --NullDistribution=path/to/null_distribution --CandidateORFs=path/to/candidate_orfs
@@ -147,9 +147,16 @@ Rscript GenerateTranslatome.R --TranslationCalls=path/to/translation_calls --Nul
 Options:
 - --Output=path/to/output_folder: Designate output directory.
 - --Threads=1: Specify thread count.
-- --ExcludeChr=none: Chromosomes/contigs to exclude. Default is none. Example: --ExcludeChr=chr1,chr8,chrM
-- --ExcludeOverlapGene=True: Exclude nORFs overlapping canonical genes on the same strand.
+- --ExcludeChr=none: Comma-delimited list of chromosomes/contigs to exclude from analysis. Default is none. Example: --ExcludeChr=chr1,chr8,chrM
+- --ExcludeOverlapGene=True: Exclude noncanonical ORFs overlapping canonical CDSs on the same strand from analysis.
 - --FDR=0.05: Define desired false discovery rate.
-- --Scrambles=100: Set number of scrambles to calculate FDR. WIll run faster with less scrambles, if enough data is processed to maintain robustness.
+- --Scrambles=100: Set number of scrambles to calculate FDR. 
 
+Description of translated_orfs.csv:
+This file contains the same information as the candidate_orfs file for ORFs inferred to be translated at the specified FDR, but with three additional columns:
+
+- in_frame_reads: number of reads mapping to first codon positions (i.e., in-frame reads) on the ORF  
+- Expression-level: ribo-seq read count divided by the length of the ORF in nucleotides
+- p_value: the p-value for binomial test for three nucleotide periodicity.
+  
 ------------------------------------------------------------------------------
