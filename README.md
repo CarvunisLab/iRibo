@@ -84,7 +84,7 @@ The columns of candidate_orfs and all_orfs are:
 
 ## GenerateTranslationProfile:
 
-Generate a genome-wide translation profile using aligned ribo-seq reads. This step generates several output files:
+Generate a genome-wide translation profile using aligned ribo-seq reads, which will be used in the next step to derive a list of translated ORFs. This step generates several output files:
 - translation_calls: Statistics on ribo-seq reads mapping to each ORF.
 - null_distribution: Statistics on scrambled reads for each ORF, used to generate a null distribution and calculate the false discovery rate. 
 - all_passed_reads_f: Information on plus strand reads that pass quality control. 
