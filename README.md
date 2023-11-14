@@ -51,40 +51,38 @@ Note:
 
 ------------------------------------------------------------------------------
 
-## GetCandidateORFs:
-
-Begin by generating candidate ORFs for translation assessment. This results in three files:
-- candidate_orfs: A list of all candidate ORFs that will be assessed for translation. This is filtered due to overlapping translation signals being hard to separate.
-- all_orfs: A list of every possible ORF that exists in the genome or transcriptome.
-- candidate_orfs.gff3: Annotations of all candidate ORFs, ready to be put into a genome browser like IGV.
+Generates a list of candidate ORFs to assess for translation by identifying open reading frames across a genome or transcriptome. Completion of this step will generate three output files:
+- all_orfs: A list of ORFs that exists in the genome or transcriptome.
+- candidate_orfs: A list of all candidate ORFs that will be assessed for translation. A subset of ORFs from all_orfs are removed so that the list of ORFs in candidate_orfs do not overlap in the same frame.
+- candidate_orfs.gff3: Annotations of all candidate ORFs to enable visualization of the ORF structure in a genome broswer such as IGV.
 
 ./iRibo --RunMode=GetCandidateORFs --Genome=path/to/genome.fa --Annotations=path/to/annotations.gtf
 
 Options:
-- --Transcriptome=path/to/transcriptome.gtf: Use transcriptome over genome.
+- --Transcriptome=path/to/transcriptome.gtf: If a transcriptome is given, candidate ORFs will be generated from transcriptome sequences rather than directly from genomic sequence.
 - --Output=path/to/output_folder: Specify output directory.
 - --Threads=1: Set number of threads.
 
-The columns of candidate_orfs and all_orfs can be interpreted as such:
-- CandidateORF_ID: index of the ORF
-- Transcript_ID: ID of the transcript the ORF is on
-- Gene_ID: The name of the gene, if canonical. X otherwise
-- contig: Index form of contig/chromosome the ORF is on.
+The columns of candidate_orfs and all_orfs are:
+- CandidateORF_ID: index of the ORF.
+- Transcript_ID: transcript_id of the transcript the ORF is on, as labeled in the transcriptome input file.
+- Gene_ID: If the coordinates of the ORF exactly line up with a canonical gene CDS, then the name of that gene is indicated. Otherwise, X.
+- contig: Index that corresponds to the contigs or chromosomes in the genome annotation file in order.
 - strand: Strand the ORF is on.
-- ORF_coord1: First coordinate of the ORF
-- ORF_coord2: Second coordinate of the ORF
-- genomic_coordinates: Coordinates of the ORF. The start and stop position within each exon of the ORF, separated by -.
+- ORF_coord1: First genomic coordinate of the ORF.
+- ORF_coord2: Last genomic coordinate of the ORF.
+- genomic_coordinates: Comma-separated list of the genomic coordinates of the exons of each ORF. 
 - ORF_length: Exonic length of the ORF.
-- antisense_gene: Protein-coding gene on the antisense strand, if any. X otherwise.
-- gene_intersect: Protein-coding gene overlap, if any. X otherwise.
-- contig_str: String form of contig/chromosome the ORF is on.
+- antisense_gene: If the ORF overlaps the CDS of an annotated protein-coding gene on the opposite strand, its name is given here. X otherwise.
+- gene_intersect: If the ORF overlaps the CDS of an annotated protein-coding gene on either strand, its name is given here. X otherwise.
+- contig_str: Name of the contig/chromosome the ORF is located on.
 
 
 ------------------------------------------------------------------------------
 
 ## GenerateTranslationProfile:
 
-Generate a genome-wide translation profile using aligned ribo-seq reads. This phase outputs:
+Generate a genome-wide translation profile using aligned ribo-seq reads. This step generates several output files:
 - translation_calls: Read statistics per ORF.
 - null_distribution: Null distribution read statistics per ORF.
 - all_passed_reads_f: Quality-passed forward strand reads.
