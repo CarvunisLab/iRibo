@@ -51,6 +51,8 @@ Note:
 
 ------------------------------------------------------------------------------
 
+## GetCandidateORFs:
+
 Generates a list of candidate ORFs to assess for translation by identifying open reading frames across a genome or transcriptome. Completion of this step will generate three output files:
 - all_orfs: A list of ORFs that exists in the genome or transcriptome.
 - candidate_orfs: A list of all candidate ORFs that will be assessed for translation. A subset of ORFs from all_orfs are removed so that the list of ORFs in candidate_orfs do not overlap in the same frame.
