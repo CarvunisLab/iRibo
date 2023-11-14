@@ -85,12 +85,12 @@ The columns of candidate_orfs and all_orfs are:
 ## GenerateTranslationProfile:
 
 Generate a genome-wide translation profile using aligned ribo-seq reads. This step generates several output files:
-- translation_calls: Read statistics per ORF.
-- null_distribution: Null distribution read statistics per ORF.
-- all_passed_reads_f: Quality-passed forward strand reads.
-- all_passed_reads_r: Quality-passed reverse strand reads (similar to forward).
-- riboseq_reads_plus.wig: Tracks of forward strand reads.
-- riboseq_reads_minus.wig: Tracks of reverse strand reads.
+- translation_calls: Statistics on ribo-seq reads mapping to each ORF.
+- null_distribution: Statistics on scrambled reads for each ORF, used to generate a null distribution and calculate the false discovery rate. 
+- all_passed_reads_f: Information on plus strand reads that pass quality control. 
+- all_passed_reads_r: Information on minus strand reads that pass quality control. 
+- riboseq_reads_plus.wig: Tracks of plus strand ribo-seq reads. Can be visualized in a genome browser.
+- riboseq_reads_minus.wig: Tracks of minus strand ribo-seq reads. Can be visualized in a genome browser.
 
 To run:
 ./iRibo --RunMode=GenerateTranslationProfile --Genome=path/to/genome.fa --Riboseq=path/to/sams.txt --CandidateORFs=path/to/candidate_orfs
@@ -107,12 +107,29 @@ sam_dir/SRR1042855_aligned.out.bam
 Options:
 - --Output=path/to/output_folder: Define output directory.
 - --Threads=1: Set thread count.
-- --Min_Length=25: Minimum read length for quality control. Most riboseq reads are between length 25-35nt, but can vary by experiment.
-- --Max_Length=35: Maximum read length for quality control. Most riboseq reads are between length 25-35nt, but can vary by experiment.
-- --P_Site_Distance=20: Max distance to check for a P-site. Most p-sites are below 20. If you have a reason to think it could be longer, can be increased.
-- --QC_Count=10000: Number of reads in the first frame of protein-coding genes for quality control.
-- --QC_Periodicity=2.0: Periodicity scale in canonical genes for quality control.
+- --Min_Length=25: Minimum ribo-seq read length for inclusion in analysis. Most riboseq reads are between length 25-35nt, but can vary by experiment.
+- --Max_Length=35: Maximum ribo-seq read length for inclusion in analysis. Most riboseq reads are between length 25-35nt, but can vary by experiment.
+- --P_Site_Distance=20: Maximum distance to check for a P-site from the start of the read. 
+- --QC_Count=10000: Minimum number of reads mapping to the first codon position of canonical coding sequences for inclusion of any read length from an experiment in the analysis. 
+- --QC_Periodicity=2.0: To pass quality control if QC_positions if false, the first codon position among canonical coding sequences must contain more reads than both the second and third positions by at least this factor. To pass quality control if QC_positions is true, there must be more first codon positions with at least one read among canonical coding sequences than second and third positions by at least this factor. 
 - --QC_Positions=false: Use positions or read counts in quality control.
+
+Description of translation_calls output file:
+- index: The index of the ORF, as in the candidate_orfs file.
+- frame0: The number of codons in the ORF in which the first position of the codon has more mapped ribo-seq reads than the second or third position. This is the number of "successes" in the binomial test for three nucleotide periodicity.
+- frame_sum: The number of codons in the ORF in which either the first, second, or third positions in the codon have more reads than the other two positions. This is the number of trials in the binomial test for three nucleotide periodicity.
+- reads0, reads1, reads2: The total count of reads mapping to the first, second, and third positions in each codon, respectively.
+
+Description of null_distribution output file:
+- index: The index of the ORF, as in the candidate_orfs file
+- scrambledN: For each scrambled replicate N, the number of codons in the scrambled ORF in which the first position of the codon has more mapped ribo-seq reads than the second or third position. This is the number of "successes" in the binomial test for three nucleotide periodicity.
+- scrambled_sumN: For each scrambled replicate N, the number of codons in the scrambled ORF in which either the first, second, or third positions in the codon have more reads than the other two positions. This is the number of trials in the binomial test for three nucleotide periodicity.
+
+Description of all_passed_reads_f and all_passed_reads_r files:
+- chr: Index of the contig or chromosome the read maps to. 
+- strand: The strand the read aligns to, 0 for forward, 1 for reverse.
+- pos: The genomic position of the start of the read.
+- count: How many reads map to this contig, strand, and position.
 
 ------------------------------------------------------------------------------
 
