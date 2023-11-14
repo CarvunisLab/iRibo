@@ -147,7 +147,7 @@ Rscript GenerateTranslatome.R --TranslationCalls=path/to/translation_calls --Nul
 Options:
 - --Output=path/to/output_folder: Designate output directory.
 - --Threads=1: Specify thread count.
-- --ExcludeChr=none: Comma-delimited list of chromosomes/contigs to exclude from analysis. Default is none. Example: --ExcludeChr=chr1,chr8,chrM
+- --ExcludeCHR=none: Comma-delimited list of chromosomes/contigs to exclude from analysis. Default is none. Example: --ExcludeCHR=chr1,chr8,chrM
 - --ExcludeOverlapGene=True: Exclude noncanonical ORFs overlapping canonical CDSs on the same strand from analysis.
 - --FDR=0.05: Define desired false discovery rate.
 - --Scrambles=100: Set number of scrambles to calculate FDR. 
