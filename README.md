@@ -75,7 +75,7 @@ The columns of candidate_orfs and all_orfs are:
 - ORF_coord2: Last genomic coordinate of the ORF.
 - genomic_coordinates: Comma-separated list of the genomic coordinates of the exons of each ORF. 
 - ORF_length: Exonic length of the ORF.
-- antisense_gene: If the ORF overlaps the CDS of an annotated protein-coding gene on the opposite strand, its name is given here. X otherwise.
+- antisense_gene: If the ORF overlaps an exon of an annotated protein-coding gene on the opposite strand, its name is given here. X otherwise.
 - gene_intersect: If the ORF overlaps the CDS of an annotated protein-coding gene on either strand, its name is given here. X otherwise.
 - contig_str: Name of the contig/chromosome the ORF is located on.
 
