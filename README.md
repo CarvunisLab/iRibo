@@ -153,7 +153,7 @@ Options:
 - --Scrambles=100: Set number of scrambles to calculate FDR. 
 
 Description of translated_orfs.csv:
-This file contains the same information as the candidate_orfs file for ORFs inferred to be translated at the specified FDR, but with three additional columns:
+This file contains the same information as the candidate_orfs file for ORFs inferred to be translated at the specified FDR, but with three additional columns.
 
 - in_frame_reads: number of reads mapping to first codon positions (i.e., in-frame reads) on the ORF  
 - Expression-level: ribo-seq read count divided by the length of the ORF in nucleotides
