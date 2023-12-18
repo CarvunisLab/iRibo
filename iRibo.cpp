@@ -1721,6 +1721,8 @@ void find_intersect_ann_threaded(vector<CandidateORF> &orfs, vector<GTF> &anns, 
 		int canonical_count =0;
 		int ann_start_index = 0;
 		int splice_count=0;
+		cout<<"\nchr: "<<curchr;
+		getchar();
 		for (int i = 0; i < orfs.size(); i++)
 		{
 			CandidateORF &my_orf = orfs[i];
@@ -1728,7 +1730,7 @@ void find_intersect_ann_threaded(vector<CandidateORF> &orfs, vector<GTF> &anns, 
 				continue;
 			}
 			my_orf.gene_id="X";
-			while (anns[ann_start_index].chr < my_orf.chr || my_orf.start_codon_pos-anns[ann_start_index].end>1000000)
+			while (ann_start_index < anns.size() && (anns.at(ann_start_index).chr < my_orf.chr || my_orf.start_codon_pos-anns.at(ann_start_index).end>1000000))
 			{
 				ann_start_index++;
 			}
@@ -1807,7 +1809,7 @@ void find_intersect_ann_threaded(vector<CandidateORF> &orfs, vector<GTF> &anns, 
 						}
 						if(my_orf.strand==0)
 						{
-							if(abs(cds[cds_id].start-my_orf.start_codon_pos)<=4 && abs(cds[cds_id].end-my_orf.stop_codon_pos)<=4)
+							if(abs(cds.at(cds_id).start-my_orf.start_codon_pos)<=4 && abs(cds.at(cds_id).end-my_orf.stop_codon_pos)<=4)
 							//if(cds.at(cds_id).start==orfs[i].start_codon_pos && cds.at(cds_id).end+3==orfs[i].stop_codon_pos)
 
 							{   
@@ -1823,7 +1825,7 @@ void find_intersect_ann_threaded(vector<CandidateORF> &orfs, vector<GTF> &anns, 
 						}
 						if(my_orf.strand==1)
 						{
-							if(abs(cds[cds_id].start-my_orf.start_codon_pos)<=3 && abs(cds[cds_id].end-my_orf.stop_codon_pos)<=3)
+							if(abs(cds.at(cds_id).start-my_orf.start_codon_pos)<=3 && abs(cds.at(cds_id).end-my_orf.stop_codon_pos)<=3)
 							//if(cds.at(cds_id).start-3==orfs[i].start_codon_pos && cds.at(cds_id).end==orfs[i].stop_codon_pos)
 							{   
 								canonical_count++;
@@ -1855,7 +1857,7 @@ void find_intersect_ann(vector<CandidateORF> &orfs, vector<GTF> &anns, map<strin
 	{
 		CandidateORF &my_orf = orfs[i];
 		my_orf.gene_id="X";
-		while (anns[ann_start_index].chr < my_orf.chr || my_orf.start_codon_pos-anns[ann_start_index].end>1000000)
+		while (ann_start_index < anns.size() && (anns[ann_start_index].chr < my_orf.chr || my_orf.start_codon_pos-anns[ann_start_index].end>1000000))
 		{
 			ann_start_index++;
 		}
@@ -3520,7 +3522,7 @@ if(runMode=="GetCandidateORFs")
     finish = std::chrono::high_resolution_clock::now();
     elapsed = finish - start;
     cout << "\nassemble_cds took: " << elapsed.count() << " s";
-    
+    getchar();
 	
 	if(!genomeOnly){
 		vector<GTF> annotations;
@@ -3533,6 +3535,7 @@ if(runMode=="GetCandidateORFs")
 		elapsed = finish - start;
 		cout << "\nread_gtf took: " << elapsed.count() << " s";
 		cout << "\nannotations read: " << annotations.size();
+		getchar();
 		
 		
 		vector<Transcript> transcripts;
@@ -3542,7 +3545,8 @@ if(runMode=="GetCandidateORFs")
 		elapsed = finish - start;
 		cout << "\nconstruct_transcripts took: " << elapsed.count() << " s";
 		cout << "\nconstruct transcripts: " << transcripts.size();
-		
+		getchar();
+
 		annotations.clear();
 
 		cout << "\nget transcript seq";
@@ -3556,8 +3560,8 @@ if(runMode=="GetCandidateORFs")
 		get_orfs_speedy(orfs, transcripts, threads, chr_labels);
 		finish = std::chrono::high_resolution_clock::now();
 		elapsed = finish - start;
-		cout << "\nget_orfs took: " << elapsed.count() << " s";
-
+		cout << "\nget_orfs took: " << elapsed.count() << " s to find " <<orfs.size()<<" orfs";
+		getchar();
 
 		transcripts.clear();
 		
@@ -3596,10 +3600,11 @@ if(runMode=="GetCandidateORFs")
 	
     start = std::chrono::high_resolution_clock::now();
     find_intersect_ann_threaded(orfs, annotations2, cds, threads, chr_labels);
+	//find_intersect_ann(orfs, annotations2, cds, threads);
     finish = std::chrono::high_resolution_clock::now();
     elapsed = finish - start;
     cout << "\nfind_intersect_ann took: " << elapsed.count() << " s";
-
+	getchar();
 
 	//Print every possible ORF
     start = std::chrono::high_resolution_clock::now();
@@ -3659,11 +3664,13 @@ if(runMode=="GetCandidateORFs")
 
 		finish = std::chrono::high_resolution_clock::now();
 		elapsed = finish - start;
-		cout << "\nsort took: " << elapsed.count() << " s";
+		cout << "\nsort took: " << elapsed.count() << " s to find "<<orfs.size()<<" orfs";
 		cout << "\nsort ORFs";
 
 		start = std::chrono::high_resolution_clock::now();
 		find_intersect_ann_threaded(orfs, annotations2, cds, threads, chr_labels);
+		//find_intersect_ann(orfs, annotations2, cds, threads);
+
 		finish = std::chrono::high_resolution_clock::now();
 		elapsed = finish - start;
 		cout << "\nfind_intersect_ann took: " << elapsed.count() << " s";
@@ -3926,5 +3933,4 @@ if(runMode=="GetCandidateORFs")
 	}
 
 }
-
 
