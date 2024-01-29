@@ -1466,6 +1466,99 @@ void print_genes(vector<CandidateORF> &orfs,string filename, int strand, int& or
 	
 }
 
+void filter_orfs_by_exon_overlap(vector<CandidateORF> &orfs)
+{
+	vector<int> to_remove(orfs.size());
+	int max_chr=0;
+	for(int i=0;i<orfs.size();i++)
+	{
+		if(orfs[i].chr>max_chr)
+		{
+			max_chr=orfs[i].chr;
+		}
+	}
+	for(int strand=0;strand<=1;strand++)
+	{
+		for(int i=0;i<=max_chr;i++)
+		{
+			cout<<"\nhandling chromosome: "<<i;
+			map<int,int> chromosome_coverage;
+			for(int j=0;j<orfs.size();j++)
+			{
+				if(orfs[j].chr!=i||orfs[j].strand!=strand)
+				{
+					continue;
+				}
+				int cur_frame = 0;
+				if(strand==1)
+				{
+					cur_frame=2;
+				}
+				for(int k=0;k<orfs[j].exons.size();k++)
+				{
+					for(int p=orfs[j].exons[k].start; p<=orfs[j].exons[k].end; p++)
+					{
+						if(cur_frame==0)
+						{
+							if(!chromosome_coverage.count(p))
+							{
+								chromosome_coverage[p]=j;
+							}
+							else
+							{
+								int other_orf = chromosome_coverage.at(p);
+								if(orfs[other_orf].gene_id=="X" && orfs[j].gene_id!="X")
+								{
+									to_remove[other_orf]=1;
+									chromosome_coverage[p]=j;								
+								}
+								else if(orfs[other_orf].gene_id!="X" && orfs[j].gene_id=="X")
+								{
+									to_remove[j]=1;
+								}
+								else if(orfs[other_orf].orf_length > orfs[j].orf_length)
+								{
+									to_remove[j]=1;
+								}
+								else
+								{
+									to_remove[other_orf]=1;
+									chromosome_coverage[p]=j;
+								}
+							}
+						}
+						if(strand==0)
+						{
+							cur_frame++;
+							if(cur_frame==3)
+							{
+								cur_frame=0;
+							}							
+						}
+						else if(strand==1)
+						{
+							cur_frame--;
+							if(cur_frame==-1)
+							{
+								cur_frame=2;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	vector<CandidateORF> filtered_orfs;
+	for(int i=0;i<orfs.size();i++)
+	{
+		if(!to_remove[i])
+		{
+			filtered_orfs.push_back(orfs[i]);
+		}
+	}
+	orfs=filtered_orfs;
+}
+
 void filter_longest_and_canonical(vector<CandidateORF> &orfs, bool genomeOnly){
 	std::vector<CandidateORF> new_orfs;
 
@@ -1721,8 +1814,8 @@ void find_intersect_ann_threaded(vector<CandidateORF> &orfs, vector<GTF> &anns, 
 		int canonical_count =0;
 		int ann_start_index = 0;
 		int splice_count=0;
-		cout<<"\nchr: "<<curchr;
-		getchar();
+		//cout<<"\nchr: "<<curchr;
+		//getchar();
 		for (int i = 0; i < orfs.size(); i++)
 		{
 			CandidateORF &my_orf = orfs[i];
@@ -3460,7 +3553,18 @@ if(runMode=="GetCandidateORFs")
     auto start = std::chrono::high_resolution_clock::now();
     auto finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed;
-    
+    //////
+	
+	//string candidate_orfs_path = "/home/acwach/human_iribo/transcriptome_candorfs/all_orfs";
+	//vector<GeneModel> all_orfs;
+	//read_genes(all_orfs, candidate_orfs_path, false);
+	//cout<<"\norfs read: "<<all_orfs.size();
+	//getchar();
+	//filter_orfs_by_exon_overlap(all_orfs);
+	//cout<<"\norfs remain after filtering: "<<all_orfs.size();
+	//getchar();
+	
+	/////
 	int threads = stoi(getArg(parseArgs, "Threads", "1", false));
 
 	string output_dir = getArg(parseArgs, "Output", "", false);
@@ -3522,7 +3626,6 @@ if(runMode=="GetCandidateORFs")
     finish = std::chrono::high_resolution_clock::now();
     elapsed = finish - start;
     cout << "\nassemble_cds took: " << elapsed.count() << " s";
-    getchar();
 	
 	if(!genomeOnly){
 		vector<GTF> annotations;
@@ -3534,9 +3637,7 @@ if(runMode=="GetCandidateORFs")
 		finish = std::chrono::high_resolution_clock::now();
 		elapsed = finish - start;
 		cout << "\nread_gtf took: " << elapsed.count() << " s";
-		cout << "\nannotations read: " << annotations.size();
-		getchar();
-		
+		cout << "\nannotations read: " << annotations.size();		
 		
 		vector<Transcript> transcripts;
 		start = std::chrono::high_resolution_clock::now();
@@ -3545,7 +3646,6 @@ if(runMode=="GetCandidateORFs")
 		elapsed = finish - start;
 		cout << "\nconstruct_transcripts took: " << elapsed.count() << " s";
 		cout << "\nconstruct transcripts: " << transcripts.size();
-		getchar();
 
 		annotations.clear();
 
@@ -3561,7 +3661,6 @@ if(runMode=="GetCandidateORFs")
 		finish = std::chrono::high_resolution_clock::now();
 		elapsed = finish - start;
 		cout << "\nget_orfs took: " << elapsed.count() << " s to find " <<orfs.size()<<" orfs";
-		getchar();
 
 		transcripts.clear();
 		
@@ -3604,7 +3703,6 @@ if(runMode=="GetCandidateORFs")
     finish = std::chrono::high_resolution_clock::now();
     elapsed = finish - start;
     cout << "\nfind_intersect_ann took: " << elapsed.count() << " s";
-	getchar();
 
 	//Print every possible ORF
     start = std::chrono::high_resolution_clock::now();
@@ -3628,7 +3726,10 @@ if(runMode=="GetCandidateORFs")
 
     start = std::chrono::high_resolution_clock::now();
 
-	filter_splice_frame_overlap(orfs, threads, chr_labels);
+	//filter_splice_frame_overlap(orfs, threads, chr_labels);
+
+	filter_orfs_by_exon_overlap(orfs);
+	cout<<"\norfs remain after filtering: "<<orfs.size();
 
 	
     finish = std::chrono::high_resolution_clock::now();
