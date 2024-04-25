@@ -113,6 +113,7 @@ Options:
 - --QC_Count=10000: Minimum number of reads mapping to the first codon position of canonical coding sequences for inclusion of any read length from an experiment in the analysis. 
 - --QC_Periodicity=2.0: To pass quality control if QC_positions if false, the first codon position among canonical coding sequences must contain more reads than both the second and third positions by at least this factor. To pass quality control if QC_positions is true, there must be more first codon positions with at least one read among canonical coding sequences than second and third positions by at least this factor. 
 - --QC_Positions=false: Use positions or read counts in quality control.
+- --Scrambles=1: Set number of scrambles to calculate FDR. 
 
 Description of translation_calls output file:
 - index: The index of the ORF, as in the candidate_orfs file.
@@ -150,7 +151,7 @@ Options:
 - --ExcludeCHR=none: Comma-delimited list of chromosomes/contigs to exclude from analysis. Default is none. Example: --ExcludeCHR=chr1,chr8,chrM
 - --ExcludeOverlapGene=True: Exclude noncanonical ORFs overlapping canonical CDSs on the same strand from analysis.
 - --FDR=0.05: Define desired false discovery rate.
-- --Scrambles=100: Set number of scrambles to calculate FDR. 
+- --Scrambles=100: Set number of scrambles to calculate FDR. Must be lower than scrambles set in GenerateTranslationProfile step.
 
 Description of translated_orfs.csv:
 This file contains the same information as the candidate_orfs file for ORFs inferred to be translated at the specified FDR, but with three additional columns.
