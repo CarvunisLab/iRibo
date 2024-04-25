@@ -249,8 +249,8 @@ public:
 		//max_codon = vector<int>(3);
 		//max_codon_scrambled = vector<int>(3);
 		frame_reads = vector<int>(3);
-		total_frames_scrambled = vector<int>(100);
-		first_max_scrambled = vector<int>(100);
+		//total_frames_scrambled = vector<int>(100);
+		//first_max_scrambled = vector<int>(100);
 
 		//seq = vector<vector<int>>(SPECIES_COUNT);
 		//exon_seqs = vector<vector<vector<int>>>(2);
@@ -1466,6 +1466,99 @@ void print_genes(vector<CandidateORF> &orfs,string filename, int strand, int& or
 	
 }
 
+void filter_orfs_by_exon_overlap(vector<CandidateORF> &orfs)
+{
+	vector<int> to_remove(orfs.size());
+	int max_chr=0;
+	for(int i=0;i<orfs.size();i++)
+	{
+		if(orfs[i].chr>max_chr)
+		{
+			max_chr=orfs[i].chr;
+		}
+	}
+	for(int strand=0;strand<=1;strand++)
+	{
+		for(int i=0;i<=max_chr;i++)
+		{
+			cout<<"\nhandling chromosome: "<<i;
+			map<int,int> chromosome_coverage;
+			for(int j=0;j<orfs.size();j++)
+			{
+				if(orfs[j].chr!=i||orfs[j].strand!=strand)
+				{
+					continue;
+				}
+				int cur_frame = 0;
+				if(strand==1)
+				{
+					cur_frame=2;
+				}
+				for(int k=0;k<orfs[j].exons.size();k++)
+				{
+					for(int p=orfs[j].exons[k].start; p<=orfs[j].exons[k].end; p++)
+					{
+						if(cur_frame==0)
+						{
+							if(!chromosome_coverage.count(p))
+							{
+								chromosome_coverage[p]=j;
+							}
+							else
+							{
+								int other_orf = chromosome_coverage.at(p);
+								if(orfs[other_orf].gene_id=="X" && orfs[j].gene_id!="X")
+								{
+									to_remove[other_orf]=1;
+									chromosome_coverage[p]=j;								
+								}
+								else if(orfs[other_orf].gene_id!="X" && orfs[j].gene_id=="X")
+								{
+									to_remove[j]=1;
+								}
+								else if(orfs[other_orf].orf_length > orfs[j].orf_length)
+								{
+									to_remove[j]=1;
+								}
+								else
+								{
+									to_remove[other_orf]=1;
+									chromosome_coverage[p]=j;
+								}
+							}
+						}
+						if(strand==0)
+						{
+							cur_frame++;
+							if(cur_frame==3)
+							{
+								cur_frame=0;
+							}							
+						}
+						else if(strand==1)
+						{
+							cur_frame--;
+							if(cur_frame==-1)
+							{
+								cur_frame=2;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	vector<CandidateORF> filtered_orfs;
+	for(int i=0;i<orfs.size();i++)
+	{
+		if(!to_remove[i])
+		{
+			filtered_orfs.push_back(orfs[i]);
+		}
+	}
+	orfs=filtered_orfs;
+}
+
 void filter_longest_and_canonical(vector<CandidateORF> &orfs, bool genomeOnly){
 	std::vector<CandidateORF> new_orfs;
 
@@ -1721,6 +1814,8 @@ void find_intersect_ann_threaded(vector<CandidateORF> &orfs, vector<GTF> &anns, 
 		int canonical_count =0;
 		int ann_start_index = 0;
 		int splice_count=0;
+		//cout<<"\nchr: "<<curchr;
+		//getchar();
 		for (int i = 0; i < orfs.size(); i++)
 		{
 			CandidateORF &my_orf = orfs[i];
@@ -1728,7 +1823,7 @@ void find_intersect_ann_threaded(vector<CandidateORF> &orfs, vector<GTF> &anns, 
 				continue;
 			}
 			my_orf.gene_id="X";
-			while (anns[ann_start_index].chr < my_orf.chr || my_orf.start_codon_pos-anns[ann_start_index].end>1000000)
+			while (ann_start_index < anns.size() && (anns.at(ann_start_index).chr < my_orf.chr || my_orf.start_codon_pos-anns.at(ann_start_index).end>1000000))
 			{
 				ann_start_index++;
 			}
@@ -1807,7 +1902,7 @@ void find_intersect_ann_threaded(vector<CandidateORF> &orfs, vector<GTF> &anns, 
 						}
 						if(my_orf.strand==0)
 						{
-							if(abs(cds[cds_id].start-my_orf.start_codon_pos)<=4 && abs(cds[cds_id].end-my_orf.stop_codon_pos)<=4)
+							if(abs(cds.at(cds_id).start-my_orf.start_codon_pos)<=4 && abs(cds.at(cds_id).end-my_orf.stop_codon_pos)<=4)
 							//if(cds.at(cds_id).start==orfs[i].start_codon_pos && cds.at(cds_id).end+3==orfs[i].stop_codon_pos)
 
 							{   
@@ -1823,7 +1918,7 @@ void find_intersect_ann_threaded(vector<CandidateORF> &orfs, vector<GTF> &anns, 
 						}
 						if(my_orf.strand==1)
 						{
-							if(abs(cds[cds_id].start-my_orf.start_codon_pos)<=3 && abs(cds[cds_id].end-my_orf.stop_codon_pos)<=3)
+							if(abs(cds.at(cds_id).start-my_orf.start_codon_pos)<=3 && abs(cds.at(cds_id).end-my_orf.stop_codon_pos)<=3)
 							//if(cds.at(cds_id).start-3==orfs[i].start_codon_pos && cds.at(cds_id).end==orfs[i].stop_codon_pos)
 							{   
 								canonical_count++;
@@ -1855,7 +1950,7 @@ void find_intersect_ann(vector<CandidateORF> &orfs, vector<GTF> &anns, map<strin
 	{
 		CandidateORF &my_orf = orfs[i];
 		my_orf.gene_id="X";
-		while (anns[ann_start_index].chr < my_orf.chr || my_orf.start_codon_pos-anns[ann_start_index].end>1000000)
+		while (ann_start_index < anns.size() && (anns[ann_start_index].chr < my_orf.chr || my_orf.start_codon_pos-anns[ann_start_index].end>1000000))
 		{
 			ann_start_index++;
 		}
@@ -2069,9 +2164,13 @@ void read_sam_file(string filename, map<string, int> &chr_labels, int threads, v
 {
 	string real_filename = filename;
 	
+	vector<string> filename_path_elements;
+	split(filename,'/',filename_path_elements);
+	
 	//Convert bam to sam, use sam
-	std::string command_1 = "samtools view -@ " + std::to_string(threads) + " -h -o " + filename.substr(0, filename.length()-4) + ".sam " + filename;
+	std::string command_1 = "samtools view -@ " + std::to_string(threads) + " -h -o " + filename_path_elements.back().substr(0, filename_path_elements.back().length()-4) + ".sam " + filename;
 	const char* command = command_1.c_str();
+	filename = filename_path_elements.back();
 	if (filename.substr(filename.length()-4) == ".bam"){
 			int a = system(command);
 			filename = filename.substr(0, filename.length()-4) + ".sam";
@@ -2995,7 +3094,7 @@ double binom_test(int k, int n, double p)
     return pval;
 }
 
-void assign_reads_to_orfs(vector<GeneModel> &all_orfs, vector<map<int, int>> &reads_map_f, vector<map<int, int>> &reads_map_r, int threads, string output_dir) {
+void assign_reads_to_orfs(vector<GeneModel> &all_orfs, vector<map<int, int>> &reads_map_f, vector<map<int, int>> &reads_map_r, int threads, string output_dir, int scrambles_count) {
    
     // Seed with a fixed number
     default_random_engine engine(42);
@@ -3080,8 +3179,9 @@ void assign_reads_to_orfs(vector<GeneModel> &all_orfs, vector<map<int, int>> &re
 		{
 			all_exon_pos_reads[i] = exon_pos_reads;
 		}
-		
-		for(int k=0; k<100; k++){
+		my_orf.first_max_scrambled = vector<int>(scrambles_count);
+		my_orf.total_frames_scrambled = vector<int>(scrambles_count);
+		for(int k=0; k<scrambles_count; k++){
 			//Find scrambled data
 			shuffle(exon_pos_reads.begin(), exon_pos_reads.end(), engine);
 			//Count triplet pattern
@@ -3378,7 +3478,7 @@ void outputTracks(vector<map<int,int>>& passed_reads_f, vector<map<int,int>>& pa
 void print_null_distribution(vector<GeneModel>& orfs, string filename){
 	ofstream file(filename);
 	file << "index";
-	for(int i=0; i<100; i++){
+	for(int i=0; i<orfs[0].first_max_scrambled.size(); i++){
 		file << " scrambled" << i << " scrambled_sum" << i;
 	}
 	for(int i=0; i<orfs.size(); i++){
@@ -3386,7 +3486,7 @@ void print_null_distribution(vector<GeneModel>& orfs, string filename){
 
 		file << "\n" << i;
 		
-		for(int k=0; k<100; k++){
+		for(int k=0; k<my_orf.first_max_scrambled.size(); k++){
 			file << " " << my_orf.first_max_scrambled[k] << " " << my_orf.total_frames_scrambled[k];
 		}
 
@@ -3458,7 +3558,18 @@ if(runMode=="GetCandidateORFs")
     auto start = std::chrono::high_resolution_clock::now();
     auto finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed;
-    
+    //////
+	
+	//string candidate_orfs_path = "/home/acwach/human_iribo/transcriptome_candorfs/all_orfs";
+	//vector<GeneModel> all_orfs;
+	//read_genes(all_orfs, candidate_orfs_path, false);
+	//cout<<"\norfs read: "<<all_orfs.size();
+	//getchar();
+	//filter_orfs_by_exon_overlap(all_orfs);
+	//cout<<"\norfs remain after filtering: "<<all_orfs.size();
+	//getchar();
+	
+	/////
 	int threads = stoi(getArg(parseArgs, "Threads", "1", false));
 
 	string output_dir = getArg(parseArgs, "Output", "", false);
@@ -3520,7 +3631,6 @@ if(runMode=="GetCandidateORFs")
     finish = std::chrono::high_resolution_clock::now();
     elapsed = finish - start;
     cout << "\nassemble_cds took: " << elapsed.count() << " s";
-    
 	
 	if(!genomeOnly){
 		vector<GTF> annotations;
@@ -3532,8 +3642,7 @@ if(runMode=="GetCandidateORFs")
 		finish = std::chrono::high_resolution_clock::now();
 		elapsed = finish - start;
 		cout << "\nread_gtf took: " << elapsed.count() << " s";
-		cout << "\nannotations read: " << annotations.size();
-		
+		cout << "\nannotations read: " << annotations.size();		
 		
 		vector<Transcript> transcripts;
 		start = std::chrono::high_resolution_clock::now();
@@ -3542,7 +3651,7 @@ if(runMode=="GetCandidateORFs")
 		elapsed = finish - start;
 		cout << "\nconstruct_transcripts took: " << elapsed.count() << " s";
 		cout << "\nconstruct transcripts: " << transcripts.size();
-		
+
 		annotations.clear();
 
 		cout << "\nget transcript seq";
@@ -3556,8 +3665,7 @@ if(runMode=="GetCandidateORFs")
 		get_orfs_speedy(orfs, transcripts, threads, chr_labels);
 		finish = std::chrono::high_resolution_clock::now();
 		elapsed = finish - start;
-		cout << "\nget_orfs took: " << elapsed.count() << " s";
-
+		cout << "\nget_orfs took: " << elapsed.count() << " s to find " <<orfs.size()<<" orfs";
 
 		transcripts.clear();
 		
@@ -3596,10 +3704,10 @@ if(runMode=="GetCandidateORFs")
 	
     start = std::chrono::high_resolution_clock::now();
     find_intersect_ann_threaded(orfs, annotations2, cds, threads, chr_labels);
+	//find_intersect_ann(orfs, annotations2, cds, threads);
     finish = std::chrono::high_resolution_clock::now();
     elapsed = finish - start;
     cout << "\nfind_intersect_ann took: " << elapsed.count() << " s";
-
 
 	//Print every possible ORF
     start = std::chrono::high_resolution_clock::now();
@@ -3623,7 +3731,10 @@ if(runMode=="GetCandidateORFs")
 
     start = std::chrono::high_resolution_clock::now();
 
-	filter_splice_frame_overlap(orfs, threads, chr_labels);
+	//filter_splice_frame_overlap(orfs, threads, chr_labels);
+
+	filter_orfs_by_exon_overlap(orfs);
+	cout<<"\norfs remain after filtering: "<<orfs.size();
 
 	
     finish = std::chrono::high_resolution_clock::now();
@@ -3659,11 +3770,13 @@ if(runMode=="GetCandidateORFs")
 
 		finish = std::chrono::high_resolution_clock::now();
 		elapsed = finish - start;
-		cout << "\nsort took: " << elapsed.count() << " s";
+		cout << "\nsort took: " << elapsed.count() << " s to find "<<orfs.size()<<" orfs";
 		cout << "\nsort ORFs";
 
 		start = std::chrono::high_resolution_clock::now();
 		find_intersect_ann_threaded(orfs, annotations2, cds, threads, chr_labels);
+		//find_intersect_ann(orfs, annotations2, cds, threads);
+
 		finish = std::chrono::high_resolution_clock::now();
 		elapsed = finish - start;
 		cout << "\nfind_intersect_ann took: " << elapsed.count() << " s";
@@ -3734,6 +3847,8 @@ if(runMode=="GetCandidateORFs")
 		int min_length = stoi(getArg(parseArgs, "Min_Length", "25", false)); //Minimum read length tested in each file
 		int max_length = stoi(getArg(parseArgs, "Max_Length", "35", false)); //Maximum read length tested in each file
 		int threads = stoi(getArg(parseArgs, "Threads", "1", false)); //Number of threads to run on
+		int scrambles = stoi(getArg(parseArgs,"Scrambles","1",false));
+		
 		//float p_site_factor = stof(getArg(parseArgs, "P_Site_Factor", "0.35", false)); //Used in p-site formula
 		float p_site_distance = stoi(getArg(parseArgs, "P_Site_Distance", "20", false)); //Distance to look for p-site from start codons in metagene profile
 		int cutoff = stoi(getArg(parseArgs, "QC_Count", "10000", false)); //How many reads required per read length to pass quality control
@@ -3909,7 +4024,7 @@ if(runMode=="GetCandidateORFs")
 		read_genes(all_orfs, candidate_orfs_path, false);
 		expand_gene_models_old(all_orfs);
 		
-		assign_reads_to_orfs(all_orfs, all_passed_reads_f,all_passed_reads_r, threads, output_dir);
+		assign_reads_to_orfs(all_orfs, all_passed_reads_f,all_passed_reads_r, threads, output_dir, scrambles);
 		//print_gene_reads_new(all_orfs, output_dir + "orfs_reads"); // _"+to_string(align_start)  + "_" + to_string(align_end)  + "_" + to_string(cutoff)  + "_" + to_string(required_frame_difference));
 
 		//Print translation statistics, and tracks
@@ -3926,5 +4041,4 @@ if(runMode=="GetCandidateORFs")
 	}
 
 }
-
 
