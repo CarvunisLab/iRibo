@@ -2162,8 +2162,10 @@ void assemble_cds(map<string,CDS> &cds,const vector<GTF> &gtfs)
 
 void read_sam_file(string filename, map<string, int> &chr_labels, int threads, vector<string> & sam_lines)
 {
+	filename.erase(remove(filename.begin(), filename.end(), '\n'), filename.cend());
+	filename.erase(remove(filename.begin(), filename.end(), '\r'), filename.cend());
 	string real_filename = filename;
-	
+
 	vector<string> filename_path_elements;
 	split(filename,'/',filename_path_elements);
 	
@@ -2171,12 +2173,12 @@ void read_sam_file(string filename, map<string, int> &chr_labels, int threads, v
 	std::string command_1 = "samtools view -@ " + std::to_string(threads) + " -h -o " + filename_path_elements.back().substr(0, filename_path_elements.back().length()-4) + ".sam " + filename;
 	const char* command = command_1.c_str();
 	filename = filename_path_elements.back();
+
 	if (filename.substr(filename.length()-4) == ".bam"){
 			int a = system(command);
 			filename = filename.substr(0, filename.length()-4) + ".sam";
 	}
 	
-
 	ifstream file(filename);
 	string line;
 	int index =0;
