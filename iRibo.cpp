@@ -249,8 +249,8 @@ public:
 		//max_codon = vector<int>(3);
 		//max_codon_scrambled = vector<int>(3);
 		frame_reads = vector<int>(3);
-		total_frames_scrambled = vector<int>(100);
-		first_max_scrambled = vector<int>(100);
+		//total_frames_scrambled = vector<int>(100);
+		//first_max_scrambled = vector<int>(100);
 
 		//seq = vector<vector<int>>(SPECIES_COUNT);
 		//exon_seqs = vector<vector<vector<int>>>(2);
@@ -2162,17 +2162,23 @@ void assemble_cds(map<string,CDS> &cds,const vector<GTF> &gtfs)
 
 void read_sam_file(string filename, map<string, int> &chr_labels, int threads, vector<string> & sam_lines)
 {
+	filename.erase(remove(filename.begin(), filename.end(), '\n'), filename.cend());
+	filename.erase(remove(filename.begin(), filename.end(), '\r'), filename.cend());
 	string real_filename = filename;
+
+	vector<string> filename_path_elements;
+	split(filename,'/',filename_path_elements);
 	
 	//Convert bam to sam, use sam
-	std::string command_1 = "samtools view -@ " + std::to_string(threads) + " -h -o " + filename.substr(0, filename.length()-4) + ".sam " + filename;
+	std::string command_1 = "samtools view -@ " + std::to_string(threads) + " -h -o " + filename_path_elements.back().substr(0, filename_path_elements.back().length()-4) + ".sam " + filename;
 	const char* command = command_1.c_str();
+	filename = filename_path_elements.back();
+
 	if (filename.substr(filename.length()-4) == ".bam"){
 			int a = system(command);
 			filename = filename.substr(0, filename.length()-4) + ".sam";
 	}
 	
-
 	ifstream file(filename);
 	string line;
 	int index =0;
@@ -3090,7 +3096,7 @@ double binom_test(int k, int n, double p)
     return pval;
 }
 
-void assign_reads_to_orfs(vector<GeneModel> &all_orfs, vector<map<int, int>> &reads_map_f, vector<map<int, int>> &reads_map_r, int threads, string output_dir) {
+void assign_reads_to_orfs(vector<GeneModel> &all_orfs, vector<map<int, int>> &reads_map_f, vector<map<int, int>> &reads_map_r, int threads, string output_dir, int scrambles_count) {
    
     // Seed with a fixed number
     default_random_engine engine(42);
@@ -3175,8 +3181,9 @@ void assign_reads_to_orfs(vector<GeneModel> &all_orfs, vector<map<int, int>> &re
 		{
 			all_exon_pos_reads[i] = exon_pos_reads;
 		}
-		
-		for(int k=0; k<100; k++){
+		my_orf.first_max_scrambled = vector<int>(scrambles_count);
+		my_orf.total_frames_scrambled = vector<int>(scrambles_count);
+		for(int k=0; k<scrambles_count; k++){
 			//Find scrambled data
 			shuffle(exon_pos_reads.begin(), exon_pos_reads.end(), engine);
 			//Count triplet pattern
@@ -3416,7 +3423,7 @@ void outputTracks(vector<map<int,int>>& passed_reads_f, vector<map<int,int>>& pa
         buffer_plus += "variableStep chrom=" + kv.first + "\n";
         for(auto& kv2 : passed_reads_f[kv.second])
         {
-            buffer_plus += std::to_string(kv2.first+1) + " " + std::to_string(kv2.second+1) + "\n";
+            buffer_plus += std::to_string(kv2.first+1) + " " + std::to_string(kv2.second) + "\n";
         }
         file_plus << buffer_plus;
         buffer_plus = ""; //clear the buffer
@@ -3424,7 +3431,7 @@ void outputTracks(vector<map<int,int>>& passed_reads_f, vector<map<int,int>>& pa
         buffer_minus += "variableStep chrom=" + kv.first + "\n";
         for(auto& kv2 : passed_reads_r[kv.second])
         {
-            buffer_minus += std::to_string(kv2.first+1) + " " + std::to_string(kv2.second+1) + "\n";
+            buffer_minus += std::to_string(kv2.first+1) + " " + std::to_string(kv2.second) + "\n";
         }
         file_minus << buffer_minus;
         buffer_minus = ""; //clear the buffer
@@ -3473,7 +3480,7 @@ void outputTracks(vector<map<int,int>>& passed_reads_f, vector<map<int,int>>& pa
 void print_null_distribution(vector<GeneModel>& orfs, string filename){
 	ofstream file(filename);
 	file << "index";
-	for(int i=0; i<100; i++){
+	for(int i=0; i<orfs[0].first_max_scrambled.size(); i++){
 		file << " scrambled" << i << " scrambled_sum" << i;
 	}
 	for(int i=0; i<orfs.size(); i++){
@@ -3481,7 +3488,7 @@ void print_null_distribution(vector<GeneModel>& orfs, string filename){
 
 		file << "\n" << i;
 		
-		for(int k=0; k<100; k++){
+		for(int k=0; k<my_orf.first_max_scrambled.size(); k++){
 			file << " " << my_orf.first_max_scrambled[k] << " " << my_orf.total_frames_scrambled[k];
 		}
 
@@ -3842,6 +3849,8 @@ if(runMode=="GetCandidateORFs")
 		int min_length = stoi(getArg(parseArgs, "Min_Length", "25", false)); //Minimum read length tested in each file
 		int max_length = stoi(getArg(parseArgs, "Max_Length", "35", false)); //Maximum read length tested in each file
 		int threads = stoi(getArg(parseArgs, "Threads", "1", false)); //Number of threads to run on
+		int scrambles = stoi(getArg(parseArgs,"Scrambles","1",false));
+		
 		//float p_site_factor = stof(getArg(parseArgs, "P_Site_Factor", "0.35", false)); //Used in p-site formula
 		float p_site_distance = stoi(getArg(parseArgs, "P_Site_Distance", "20", false)); //Distance to look for p-site from start codons in metagene profile
 		int cutoff = stoi(getArg(parseArgs, "QC_Count", "10000", false)); //How many reads required per read length to pass quality control
@@ -4017,7 +4026,7 @@ if(runMode=="GetCandidateORFs")
 		read_genes(all_orfs, candidate_orfs_path, false);
 		expand_gene_models_old(all_orfs);
 		
-		assign_reads_to_orfs(all_orfs, all_passed_reads_f,all_passed_reads_r, threads, output_dir);
+		assign_reads_to_orfs(all_orfs, all_passed_reads_f,all_passed_reads_r, threads, output_dir, scrambles);
 		//print_gene_reads_new(all_orfs, output_dir + "orfs_reads"); // _"+to_string(align_start)  + "_" + to_string(align_end)  + "_" + to_string(cutoff)  + "_" + to_string(required_frame_difference));
 
 		//Print translation statistics, and tracks
