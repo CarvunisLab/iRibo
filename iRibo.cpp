@@ -3960,7 +3960,7 @@ if(runMode=="GetCandidateORFs")
 	vector<SpecialORF> special_orfs;
 	if(file_exists("special_orf_table"))
 	{
-		read_special_orf_table(special_orfs,"/home/acwach/HumanMS/special_orf_table");
+		read_special_orf_table(special_orfs,"special_orf_table");
 	}
 	
     vector<string> genome;
